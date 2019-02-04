@@ -1,0 +1,214 @@
+﻿1011 = 11
+0010 =  2
+0110 =  6
+0101 =  5
+
+
+
+0101 =  5
+0111 =  7
+1100 = 12
+0110 =  6
+
+
+The optimal way to implement XNOR would be to just take the negation of the XOR operation: ~(a ^ b)
+However, in our case, we just want negation for 4-bit integers. The normal negation operation will cause the integer to become negative as well (two's complement).
+So instead of negating, we just subtract the XOR result from 1111:
+
+(This only works for 4-bit integers)
+def xnor(a, b):
+    0b1111 - a ^ b
+
+
+
+However, we can't XNOR integers successively, since XNORing the result of "x XNOR y" with z, is not the same as XNORing them all together "x XNOR y XNOR z"
+What we can do is AND them successively first. This will give all the 1s they have in common. 
+
+What we can do is:
+1. AND them successively first. This will give all the 1s they have in common.
+2. Negate all of them and AND them successively again. This will give all the 0s they have in common.
+Deprecated 3. Sum the results from 1. and 2. to get all the bits they have in common (both 1s and 0s).
+   (We know the results from 1. and 2. won't conflict since if they all had 1s in e.g. position 2, they all would have 0s there when they got negated, so ANDing that would always give 0 in that position)
+3. OR the results from 1. and 2. to get all the bits they have in common (both 1s and 0s).
+
+In previous example:
+
+  0101 =  5
+& 0111 =  7
+= 0101
+
+  1100 = 12
+& 0101
+= 0100
+
+  0110 =  6
+& 0100
+= 0100, which is the correct result after successive application of AND
+
+Then, we negate all of them and AND them successively again to get all the 0s they have in common.
+
+~0101 = 1010 = 10
+~0111 = 1000 =  8
+~1100 = 0011 =  3
+~0110 = 1001 =  9
+
+  1010 = 10
+& 1000 =  8
+= 1000
+
+  0011 =  3
+& 1000
+= 0000
+
+  1001 =  9
+& 0000
+= 0000, which is the correct result after negation and successive application of AND
+
+Then we can sum the results together.
+0100 + 0000 = 0100, which is the correct indication of which bits they all have in common, either 1s or 0s
+
+
+
+A better example would be something where they all actually both have both a 1 and a 0 in common:
+0100
+0110
+1100
+1110
+
+  0100
+& 0110
+= 0100
+
+  1100
+& 0100
+= 0100
+
+  1110
+& 0100
+= 0100, which is the correct result after successive application of AND
+
+
+~0100 = 1011
+~0110 = 1001
+~1100 = 0011
+~1110 = 0001
+
+  1011
+& 1001
+= 1001
+
+  0011
+& 1001
+= 0001
+
+  0001
+& 0001
+= 0001, which is the correct result after negation and successive application of AND
+
+
+0100 + 0001 = 0101, which is the correct indication of which bits they all have in common, either 1s or 0s
+0101 = 5, which can be used to find out HOW MANY bits they all have in common, using the lookup table below.
+num_to_bits[5] = 2
+
+
+
+
+To find out how many characteristics in common, use a lookup table:
+int num_to_bits[16] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
+
+Example 1:
+1011 = 11
+1101 = 13
+have 2 characteristics in common.
+     1011
+XNOR 1101
+=    1001 = 9
+num_to_bits[9] == 2
+
+Example 2:
+1011 = 11
+0111 = 7
+also have 2 characteristics in common.
+     1011
+XNOR 0111
+=    0011 = 3
+
+num_to_bits[3] == 2
+
+Example 3:
+1101 = 13
+1001 = 9
+have 3 characteristics in common.
+     1101
+XNOR 1001
+=    1011 = 11
+num_to_bits[11] == 3
+
+
+
+
+0000
+0001
+0010
+0011
+0100
+0101
+0110
+0111
+1000
+1001
+1010
+1011
+1100
+1101
+1110
+1111
+
+
+
+We define the concept of a "board value" that is represented by how close the board is to a win (see further explanation below).
+It makes thus sense to conclude that rows/cols/diags that are full, but don't have a 4-value, is useless and should have value 0.
+
+
+
+When my turn to place:
+Want to maximize board.
+Calculate all boards that can occur from the piece I have to place (worst case first move: 16 free tiles -> 16 possible boards)
+For each possible board, calculate how many of each row/col/diag value it has. For example, the 4 rows have values (2,3,1,2), cols have (1,1,2,2), diags have (2,3). Then the board has 
+- 4-values: 0 (if a board with a 4-value is found, this should be selected, since it would mean a win)
+- 3-values: 2
+- 2-values: 5
+- 1-values: 3
+These values could be summed to get a "maximum value" of the board, which could then be compared among the possible boards, and the "max board" could then be selected.
+However, there could be 2 of the generated boards where the first one a new 2-row was added, and in the second two new 1-rows were added.
+They would have the same "max value", but here we should consider the first board more desirable, since it goes closer to finding a win.
+We always want to choose the move that generated the board that had the closest to a win.
+We define moves that yields boards "closer to a win" as:
+
+###  TODO: These should be looked over and maybe refined.  ###
+
+- 1. The move that made a row/col/diag increment the previous max "value" (e.g. go from 2 being the highest value on the board, to 3 being the highest value on the board)
+- 2. The move that incremented the number of rows/cols/diags with the max "value" (e.g. go from a board with 4 rows/cols/diags with value 2, to a board with 5 rows/cols/diags with value 2, when 2 is the highest value on the board)
+- 3-ish. If the max value isn't incremented, but the value below the max value is, then that is the next step. This should keep going down in order.
+( NOTE: Maybe the 2nd and 3rd will come naturally by themselves as we implement it, the order and so... )
+
+
+
+When my turn to select a piece for the opponent:
+Want to keep the board minimized.
+Calculate all boards that can be generated from all selections of pieces (worst case first move: 16 pieces to choose from, 16 free tiles to place on -> 16*16 = 256 possible boards. Still efficiently managable.)
+Choose the move that generated the board that had the farthest from a win:
+- 1.
+
+
+
+
+
+
+
+A thought (only relevant when it's my turn to place): 
+Moves that make a row/col/diag full, but not a 4-value row/col/diag, will screw with the calculations when trying to maximize the board. They might increment the "max value" of the board, but they also become useless.
+This should probably be taken into account; rows/cols/diags that become full and not get a 4-value, should get a 0-value.
+
+
+
