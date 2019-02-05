@@ -1,4 +1,4 @@
-﻿1011 = 11
+1011 = 11
 0010 =  2
 0110 =  6
 0101 =  5
@@ -212,3 +212,40 @@ This should probably be taken into account; rows/cols/diags that become full and
 
 
 
+Potential values.
+1. Max row value
+   (3 pieces with 1 property common, is more worth than 2 pieces with 2 properties common.
+   BUT if there is another piece in the same row that has the opposite value, then that
+   property is useless, since it can't be used to win the row)
+2. Number of common properties
+   (2 pieces with 3 properties in common, is more worth than 2 pieces with 2 properties in common)
+3. Number of possibilities
+   (a row with 1 piece has bigger potential (4 potential properties to be common with in the future)
+   to be winning than a row with 2 pieces (at max 3 potential properties to be common, since they
+   can't be equal, since all pieces are unique))
+
+Different value dimensions can be worth more than others.
+Either we can compare value dimensions by value dimension and when one beats the other, we consier
+the board superior to the other.
+Alternatively we can give a multiple to each dimension that makes one more worth than the other,
+(e.g. *4 to the first, *3 to the second, *2 to the last). This way, a dimensions that is beat by the
+first property can still win if it has higher value in the second two.
+
+
+
+
+
+
+heuristic value of DRAW should be 0?
+if maximizing values is positive and minimizing is negative:
+if we've found a move that yields positive value for player, then it will be bigger than 0 and will be picked over a draw
+if we've only found moves that yields negative values for player, then it will be less than 0 and the draw will be picked over a potentially bad move
+Perhaps doesn't work like this. Should a draw be preferred over a somewhat bad move or should it always be considered worst, because we always want to win, even though we have to let the opponent do a better move?
+
+IDEA:
+We will never reach negative values, only less positive values. 
+But we have to have some way of selecting a draw over a winning move for the opponent.
+
+IDEA:
+Both moves that reach a draw and those that reach a win for the opponent should get the value "negative infinity", since we always want to win.
+However, there should still be some way to make the draw move a little bit better than the losing move.
