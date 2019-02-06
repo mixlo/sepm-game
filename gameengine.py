@@ -28,7 +28,13 @@ class AI(object):
             return self._calc_best_piece(board, pieces)
         else:
             return self._calc_worst_piece(board, pieces)
-    
+
+    def random_move(self, state):
+        return random.choice(state.free_squares())
+
+    def random_piece(self, state):
+        return random.choice(list(state.pieces))
+        
     def _calc_best_move(self, board, piece):
         pass
     def _calc_worst_move(self, board, piece):
@@ -54,7 +60,7 @@ class AI(object):
         if should_max:
             val = Limits.MINVAL
             for child in children:
-                child_val = self._alphabeta(child, depth−1, alpha, beta, False)
+                child_val = self._alphabeta(child, depth-1, alpha, beta, False)
                 val = max(val, child_val)
                 alpha = max(alpha, val)
                 if alpha >= beta:
@@ -63,7 +69,7 @@ class AI(object):
         else:
             val = Limits.MAXVAL
             for child in children:
-                child_val = self._alphabeta(child, depth−1, alpha, beta, True)
+                child_val = self._alphabeta(child, depth-1, alpha, beta, True)
                 val = min(val, child_val)
                 beta = min(beta, val)
                 if alpha >= beta:
@@ -72,9 +78,8 @@ class AI(object):
     
     def _get_children(self, state):
         children = []
-        free_squares = 
         if state.is_holding():
-            for row, col in state.free_squares:
+            for row, col in state.free_squares():
                 child = state.copy()
                 child.place_piece(row, col)
                 children.append(child)

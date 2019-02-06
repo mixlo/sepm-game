@@ -50,7 +50,7 @@ class State(AbsState):
     @pieces.setter
     def pieces(self, ps):
         self._pieces = ps.copy()
-    
+
     def is_holding(self):
         return self._held_piece is not None
     
@@ -79,7 +79,7 @@ class State(AbsState):
         squares = []
         for row in range(4):
             for col in range(4):
-                if self._board[i][j] is None:
+                if self._board[row][col] is None:
                     squares.append((row,col))
         return squares
     

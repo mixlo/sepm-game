@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
-import state
+import state, gameengine
+import sys
 
 class Game(object):
     piece_msg = "Player {}, choose a piece for the opponent to place: "
     square_msg = "Player {}, choose a square on which to place the piece: "
     
-    def __init__(self):
+    def __init__(self, ai_diff=None):
         # Creates a new state with empty board and full pool of pieces
         self._state = state.State()
         self._current_player = 0
+        self._ai = None if ai_diff is None else gameengine.AI(ai_diff)
     
     def start(self):
         # Print initial state of board and pieces
@@ -29,8 +31,16 @@ class Game(object):
             # Print board and pieces
             self._print_board()
             self._print_pieces()
-    
+
     def _prompt_piece(self):
+        if self._current_player == 1 and self._ai is not None:
+            piece = self._ai.random_piece(self._state)
+            print("AI picked piece:", self._to_4bit_str(piece))
+            return piece
+        else:
+            return self._prompt_piece_human()
+            
+    def _prompt_piece_human(self):
         # Expects an input formed as a string of four bits, e.g. "0101"
         piece_str = input(self.piece_msg.format(self._current_player+1))
         while True:
@@ -45,8 +55,16 @@ class Game(object):
                 piece_str = input("Piece is already played, try again: ")
                 continue
             return piece
-    
+
     def _prompt_square(self):
+        if self._current_player == 1 and self._ai is not None:
+            square = self._ai.random_move(self._state)
+            print("AI chose square:", str(square[0]+1) + str(square[1]+1))
+            return square
+        else:
+            return self._prompt_square_human()
+        
+    def _prompt_square_human(self):
         # Expects an input formed as a string of two coordinates, e.g. "23"
         square_str = input(self.square_msg.format(self._current_player+1))
         while True:
@@ -93,7 +111,8 @@ class Game(object):
 
 
 def main():
-    g = Game()
+    ai_diff = int(sys.argv[1]) if len(sys.argv) > 1 else None
+    g = Game(ai_diff)
     g.start()
 
 # If file is called from command line, run main() function
