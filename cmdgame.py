@@ -152,24 +152,29 @@ class GameTestCase(unittest.TestCase):
 
     def test_draw(self):
         g = Game()
-        g._state.board = [[0b0100, 0b1000, 0b1110, 0b1111],
-                    [0b0000, 0b1100, 0b0010, 0b0111],
-                    [0b0001, 0b0011, 0b0101, 0b1001],
-                    [0b1011, 0b1101, 0b1010, 0b0110]] #win in diags
+        self.assertFalse(g._state.is_draw())
+        g._state.pieces = set([])
+        self.assertTrue(g._state.is_draw())
+        g._state.pieces = set([1])
+        self.assertFalse(g._state.is_draw())
+        #g._state.board = [[0b0100, 0b1000, 0b1110, 0b1111],
+         #           [0b0000, 0b1100, 0b0010, 0b0111],
+          #          [0b0001, 0b0011, 0b0101, 0b1001],
+           #         [0b1011, 0b1101, 0b1010, 0b0110]] #win in diags
         #self.assertFalse(g._state.is_draw()) # might change depending on draw definition
-        g._state.board = [[0b1111, 0b1000, 0b1110, 0b0100],
-                    [0b0000, 0b0010, 0b1100, 0b0111],
-                    [0b0001, 0b0011, 0b0101, 0b1001],
-                    [0b1011, 0b1101, 0b1010, 0b0110]]
+        #g._state.board = [[0b1111, 0b1000, 0b1110, 0b0100],
+               #     [0b0000, 0b0010, 0b1100, 0b0111],
+                #    [0b0001, 0b0011, 0b0101, 0b1001],
+                 #   [0b1011, 0b1101, 0b1010, 0b0110]]
         #print(g._state.board)
 
         #print(None)
-        self.assertTrue(g._state.is_draw())
-        g._state.board = [[0b1111, 0b1000, 0b1110, 0b0100],
-                    [0b0000, 0b0010, 0b1100, 0b0111],
-                    [0b0001, 0b0011, 0b0101, 0b1001],
-                    [None, 0b1101, 0b1010, 0b0110]] 
-        self.assertFalse(g._state.is_draw()) #might change depending on draw definition, in this case there is only one move availible and it will result in a draw
+        #self.assertTrue(g._state.is_draw())
+        #g._state.board = [[0b1111, 0b1000, 0b1110, 0b0100],
+#                    [0b0000, 0b0010, 0b1100, 0b0111],
+ #                   [0b0001, 0b0011, 0b0101, 0b1001],
+  #                  [None, 0b1101, 0b1010, 0b0110]] 
+        #self.assertFalse(g._state.is_draw()) #might change depending on draw definition, in this case there is only one move availible and it will result in a draw
         
         
     def test_place(self):
@@ -223,7 +228,7 @@ class GameTestCase(unittest.TestCase):
                     [0b1011, 0b1101, 0b1010, 0b0110]]
         
         diag_1 = [0b1111, 0b0010, 0b0101, 0b0110]
-        diag_2 = [0b0110, 0b0101, 0b1100, 0b1111]
+        diag_2 = [0b0100, 0b1100, 0b0011, 0b1011]
         
         stored_d1, stored_d2 = g._state._get_diags(g._state.board)
         #print(stored_d1)
@@ -263,6 +268,8 @@ class GameTestCase(unittest.TestCase):
 
 # If file is called from command line, run main() function
 if __name__ == "__main__":
-    
-    unittest.main() #comment this to disable test and run the actuall program
-    main() 
+    testmode = False
+    if testmode:
+        unittest.main() 
+    else:
+        main() 
