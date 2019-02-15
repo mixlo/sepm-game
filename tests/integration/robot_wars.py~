@@ -1,0 +1,65 @@
+
+
+
+
+
+def HAL_9000_vs_Pumba(rounds):
+    draw_counter = 0
+    px_win_count = 0
+    py_win_count = 0
+    pumba = "Pumba"
+    hal = "HAL 9000"
+
+    p3 = player.AIPlayer("Alfred", gameengine.Difficulty.LOW)
+    pumba = player.AIPlayer("Pumba", gameengine.Difficulty.MEDIUM)
+    hal = player.AIPlayer("HAL 9000", gameengine.Difficulty.HIGH)
+    
+    for i in range(rounds):
+        g = cmdgame.Game(pumba, hal)
+        g.start()
+        winner = g.get_winner()
+        if winner:
+            if pumba == winner:
+                pumba_win_count += 1
+            else:
+                hal_win_count += 1
+        else:
+            draw_count += 1
+    print("Player {}: {} Wins".format(pumba, pumba_win_count))
+    print("Player {}: {} Wins".format(hal, hal_win_count))
+    print("Draws: {} ".format(draw_counter))
+    
+
+def main():
+    rounds = 20
+    draw_counter = 0
+    px_win_count = 0
+    py_win_count = 0
+    px = "Pumba"
+    py = "HAL 9000"
+    p1 = player.HumanPlayer("Jeff")
+    p2 = player.HumanPlayer("Dave")
+    p3 = player.AIPlayer("Alfred", gameengine.Difficulty.LOW)
+    p4 = player.AIPlayer("Pumba", gameengine.Difficulty.MEDIUM)
+    p5 = player.AIPlayer("HAL 9000", gameengine.Difficulty.HIGH)
+    
+    
+    for i in range(rounds):
+        g = cmdgame.Game(p4, p5)
+        g.start()
+        winner = g.get_winner()
+        if winner:
+            if p3 == winner:
+                px_win_count += 1
+            else:
+                py_win_count += 1
+        else:
+            draw_count += 1
+        
+    print("Player {}: {} Wins".format(px, px_win_count))
+    print("Player {}: {} Wins".format(py, py_win_count))
+    print("Draws: {} ".format(draw_counter))
+        
+# If file is called from command line, run main() function
+if __name__ == "__main__":
+    main()
