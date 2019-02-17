@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import gameengine, cmdgame, player
+
 def run_game(rounds, p1, p2, p1_name, p2_name):
     p1_win_count = 0
     p2_win_count = 0
@@ -21,6 +22,7 @@ def run_game(rounds, p1, p2, p1_name, p2_name):
     print("Player {}: {} Wins".format(p1_name, p1_win_count))
     print("Player {}: {} Wins".format(p2_name, p2_win_count))
     print("Draws: {} ".format(draw_counter))
+
 def main():
     rounds = 5
     p1_name = "Jeff"

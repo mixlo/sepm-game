@@ -5,14 +5,14 @@ from functools import reduce
 from math import inf
 
 class Difficulty:
-    LOW = 0
-    MEDIUM = 1
-    HIGH = 2
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
 
 class AI(object):
     # Constructor
     def __init__(self, difficulty):
-        self._difficulty_smartness = [0, 0.5, 1.1][difficulty]
+        self._difficulty_smartness = [0, 0.5, 1.1][difficulty-1]
     
     def choose_piece(self, state):
         if random.random() < self._difficulty_smartness:

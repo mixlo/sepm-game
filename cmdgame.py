@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import state
-import unittest
 
 class Game(object):
     def __init__(self, player1=None, player2=None):
@@ -31,10 +30,12 @@ class Game(object):
             # Print board and pieces
             self._print_board()
             self._print_pieces()
+    
     def get_winner(self):
         if not self._state.is_draw():
             return self._winner
         return False
+    
     def _game_over(self):
         if self._state.has_winner():
             print("{} wins!".format(self._players[self._cp].name))
@@ -42,8 +43,6 @@ class Game(object):
             return True
         if self._state.is_draw():
             print("Draw!")
-            #_draw = True
-            
             return True
         return False
     
