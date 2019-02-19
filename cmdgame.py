@@ -23,8 +23,7 @@ class Game(object):
 
     def start(self):
         # Print initial state of board and pieces
-        self._print_board()
-        self._print_pieces()
+        GameIO.print_state(self._state)
         while not self._game_over():
             # Prompt player for piece
             piece = self._players[self._cp].prompt_piece(self._state)
@@ -54,7 +53,7 @@ class Game(object):
         if self._state.has_winner():
             self._winner = self._players[self._cp]
             self._loser = self._players[self._cp ^ 1]
-            GameIO.print_winner(self._winner.name))
+            GameIO.print_winner(self._winner.name)
             return True
         if self._state.is_draw():
             GameIO.print_draw()
@@ -71,7 +70,7 @@ class GameIO(object):
     def print_winner(cls, name):
         print("{} wins!".format(name))
 
-    @classsmethod
+    @classmethod
     def print_draw(cls):
         print("Draw!")
 
