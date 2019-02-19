@@ -11,6 +11,15 @@ class Game(object):
         # Current player's index in array
         self._cp = 0
         self._winner = None
+        self._loser = None
+
+    @property
+    def winner(self):
+        return self._winner
+
+    @property
+    def loser(self):
+        return self._loser
 
     def start(self):
         # Print initial state of board and pieces
@@ -28,35 +37,57 @@ class Game(object):
             # Place piece, modify state
             self._state.place_piece(row, col)
             # Print board and pieces
-            self._print_board()
-            self._print_pieces()
+            GameIO.print_state(self._state)
+
+    def reset(self):
+        self._state = state.State()
+        self._cp = 0
+        self._winner = None
+        self._loser = None
     
     def get_winner(self):
         if not self._state.is_draw():
-            return self._winner
+            return self._winner.name
         return False
     
     def _game_over(self):
         if self._state.has_winner():
-            print("{} wins!".format(self._players[self._cp].name))
-            self._winner = self._players[self._cp].name
+            self._winner = self._players[self._cp]
+            self._loser = self._players[self._cp ^ 1]
+            GameIO.print_winner(self._winner.name))
             return True
         if self._state.is_draw():
-            print("Draw!")
+            GameIO.print_draw()
             return True
         return False
+
+class GameIO(object):
+    @classmethod
+    def print_state(cls, state):
+        cls._print_board(state.board)
+        cls._print_pieces(state.pieces)
     
-    def _print_board(self):
+    @classmethod
+    def print_winner(cls, name):
+        print("{} wins!".format(name))
+
+    @classsmethod
+    def print_draw(cls):
+        print("Draw!")
+
+    @classmethod
+    def _print_board(cls, board):
         print("BOARD:")
-        for row in self._state.board:
+        for row in board:
             for col in row:
                 print(format(col, '04b') if col is not None else "----", 
                       end=" ")
             print()
-    
-    def _print_pieces(self):
+
+    @classmethod
+    def _print_pieces(cls, pieces):
         print("PIECES:")
         print("{", end=" ")
-        for piece in self._state.pieces:
+        for piece in pieces:
             print(format(piece, '04b'), end=" ")
         print("}")
