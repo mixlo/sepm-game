@@ -79,9 +79,7 @@ class StartMenu(AbsMenu):
         if game is None:
             return
         game.start()
-        server_sock.shutdown(socket.SHUT_RDWR)
         server_sock.close()
-        opp_sock.shutdown(socket.SHUT_RDWR)
         opp_sock.close()
 
     def _play_joined_game(self):
@@ -89,7 +87,6 @@ class StartMenu(AbsMenu):
         if game is None:
             return
         game.start()
-        opp_sock.shutdown(socket.SHUT_RDWR)
         opp_sock.close()
 
     def _play_tournament(self):
@@ -148,9 +145,7 @@ class TournamentMenu(AbsMenu):
         if t is None:
             return
         t.play()
-        server_sock.shutdown(socket.SHUT_RDWR)
         server_sock.close()
-        opp_sock.shutdown(socket.SHUT_RDWR)
         opp_sock.close()
 
     def _play_joined_tournament(self):
@@ -158,12 +153,12 @@ class TournamentMenu(AbsMenu):
         if t is None:
             return
         t.play()
-        opp_sock.shutdown(socket.SHUT_RDWR)
         opp_sock.close()
 
 class GameFactory(object):
-    _port = 1337
-    _conn_timeout = 30
+    _default_port = 1337
+    _tournament_port = 1338
+    _conn_timeout = 60
 
     _host_tournament_msg = """
 You are the host of a {}-player tournament. Please provide your {} players and 
@@ -211,10 +206,11 @@ please provide the remaining {} participants.
         if input("Host as AI? (y/n): ").strip().lower() == "y":
             ai_diff = cls._prompt_difficulty("AI")
         print("Waiting for opponent...")
-        server_sock, opp_sock = cls._establish_client_conn()
+        server_sock, opp_sock = cls._establish_client_conn(cls._default_port)
         if opp_sock is None:
             print("No opponent connected within {} seconds."
                   .format(cls._conn_timeout))
+            print()
             return None, None, None
         p = None
         if ai_diff is None:
@@ -225,15 +221,17 @@ please provide the remaining {} participants.
         opp_name = opp_sock.recv(1024).decode("utf-8")
         print("Established connection with opponent {}.".format(opp_name))
         o = NetworkOpponent(opp_name, opp_sock)
+        print()
         return Game(p, o), server_sock, opp_sock
 
     @classmethod
     def create_joined_game(cls):
         opp_addr = cls._prompt_ip("host")
         print("Connecting to host...")
-        opp_sock = cls._establish_host_conn(opp_addr)
+        opp_sock = cls._establish_host_conn(opp_addr, cls._default_port)
         if opp_sock is None:
             print("Couldn't connect to host.")
+            print()
             return None, None
         opp_name = opp_sock.recv(1024).decode("utf-8")
         print("Established connection with opponent {}.".format(opp_name))
@@ -247,6 +245,7 @@ please provide the remaining {} participants.
             p = NetworkHumanPlayer(p_name, opp_sock)
         opp_sock.send(p.name.encode("utf-8"))
         o = NetworkOpponent(opp_name, opp_sock)
+        print()
         return Game(o, p), opp_sock
 
     @classmethod
@@ -261,10 +260,11 @@ please provide the remaining {} participants.
         p_count = cls._prompt_participants_count()
         p_count_local = cls._prompt_host_participants_count(p_count)
         print("Waiting for client computer to connect...")
-        server_sock, opp_sock = cls._establish_client_conn()
+        server_sock, opp_sock = cls._establish_client_conn(cls._tournament_port)
         if opp_sock is None:
             print("No one connected within {} seconds."
                   .format(cls._conn_timeout))
+            print()
             return None, None, None
         opp_sock.send("{},{}".format(p_count, p_count_local).encode("utf-8"))
         print("Established connection with client computer.")
@@ -289,9 +289,10 @@ please provide the remaining {} participants.
     def create_joined_tournament(cls):
         opp_addr = cls._prompt_ip("host")
         print("Connecting to host...")
-        opp_sock = cls._establish_host_conn(opp_addr)
+        opp_sock = cls._establish_host_conn(opp_addr, cls._tournament_port)
         if opp_sock is None:
             print("Couldn't connect to host.")
+            print()
             return None, None
         counts = opp_sock.recv(1024).decode("utf-8")
         p_count, p_count_host = [int(c) for c in counts.split(",")]
@@ -315,27 +316,25 @@ please provide the remaining {} participants.
         return Tournament(participants, False), opp_sock
 
     @classmethod
-    def _establish_host_conn(cls, host_ip):
+    def _establish_host_conn(cls, host_ip, port):
         host_sock = socket.socket()
         try:
-            host_sock.connect((host_ip, cls._port))
+            host_sock.connect((host_ip, port))
             return host_sock
         except socket.error:
-            host_sock.shutdown(socket.SHUT_RDWR)
             host_sock.close()
             return None
 
     @classmethod
-    def _establish_client_conn(cls):
+    def _establish_client_conn(cls, port):
         server_sock = socket.socket()
-        server_sock.bind(('', cls._port))
+        server_sock.bind(('', port))
         server_sock.listen(1)
         server_sock.settimeout(cls._conn_timeout)
         try:
             client_sock, _ = server_sock.accept()
             return server_sock, client_sock
         except socket.error:
-            server_sock.shutdown(socket.SHUT_RDWR)
             server_sock.close()
             return None, None
 
