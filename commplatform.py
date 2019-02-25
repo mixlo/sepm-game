@@ -120,6 +120,7 @@ class GameFactory(object):
     # Default settings for sockets.
     _port = 1337
     _timeout = 10
+    _taken_names = []
 
     # Should prompt for two names and return a cmdgame.Game instance with two 
     # HumanPlayer instances.
@@ -131,14 +132,26 @@ class GameFactory(object):
     # cmdgame.Game instance with a HumanPlayer and a AIPlayer instance.
     @classmethod
     def create_p_vs_ai_game(cls):
+        #p_name = cls._
         pass
 
     # Should prompt for two names and two AI difficulties and return a 
     # cmdgame.Game instance with two AIPlayer instances.
     @classmethod
     def create_ai_vs_ai_game(cls):
-        pass
+        ai1_name = cls._prompt_name("In the right corner the AI:")
+        _taken_names.append(ai1_name)
+        ai1_diff = cls.prompt_difficulty(ai1_name)
+        ai1 = player.AIPlayer(p1_name, ai1_diff)
 
+        
+        ai2_name = cls._prompt_name("And in the left corner the AI:")
+        _taken_names.append(p2_name)
+        ai2_diff = cls.prompt_difficulty(ai2_name)
+        ai2 = player.AIPlayer(p1_name, ai1_diff)
+
+        g = cmdgame.Game(ai1, ai2)
+        g.start()
     # Should ask the player if they want to host the game as a human or an AI
     # and in the case of an AI, ask for a difficulty level.
     # Should listen for an incoming connection from an opponent via a socket
@@ -195,14 +208,54 @@ class GameFactory(object):
     # Should prompt for a name, making sure it isn't empty.
     @classmethod
     def _prompt_name(cls, title):
-        pass
-
+        
+        p_str = input(title).strip()
+        while True:
+            valid, error = cls._check_name(p_str)
+            if not valid:
+                p_str = input(error).strip()
+                continue
+            
+            return p_str
+    @classmethod
+    def _check_name(cls, name):
+        if False:
+            return False, "Invalid name, try again: "
+        if name in _taken_names:
+            return False, "Name already taken, try again: "
+        return True
     # Should prompt for an AI difficulty, making sure it is valid.
     @classmethod
     def _prompt_difficulty(cls, title):
-        pass
+        p_str = input("Contender {} set to difficulty (1 for easy, 2 for meduim, 3 for hard): ".format(title)).strip()
+        while True:
+            valid, error = cls._check_difficulty(p_str)
+            if not valid:
+                p_str = input(error).strip()
+                continue
+            diff_int = int(p_str)
+            if diff_int == 1:
+                return gameengine.Difficulty.LOW
+            elif diff_int == 2:
+                return gameengine.Difficulty.MEDIUM
+            else:
+                return gameengine.Difficulty.HIGH
+            
+    @classmethod
+    def _check_difficulty(cls, diff_str):
+        try:
+            diff_int = int(diff_str)
+            if diff_int > 3:
+                return False, "In order not to create skynet we capped the difficulty at 3, try again: "
+            elif diff_int < 1:
+                return False, "Cannot chose lower difficulty than 1, try again: "
+        except ValueError:
+            return False, "Input is not an int, please choose an int between 1 and 3, where 1 = easy AI, 2 = medium AI, 3 = hard AI: "       
+        return True
 
     # Should prompt for an IPv4 address, making sure it is valid.
     @classmethod
     def _prompt_ip(cls, title):
         pass
+if __name__ == "__main__":
+    main()

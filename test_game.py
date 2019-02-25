@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 import gameengine, cmdgame, player
-
+import threading
+running = True
+def mytimer():
+    running = False
 def run_game(rounds, p1, p2, p1_name, p2_name):
     p1_win_count = 0
     p2_win_count = 0
@@ -35,8 +38,11 @@ def main():
     p3 = player.AIPlayer(p3_name, gameengine.Difficulty.LOW)
     p4 = player.AIPlayer(p4_name, gameengine.Difficulty.MEDIUM)
     p5 = player.AIPlayer(p5_name, gameengine.Difficulty.HIGH)
-    run_game(1, p3, p5, p3_name, p5_name)
-    
+
+    my_timer = threading.Timer(120.0, mytimer)
+    my_timer.start()
+    run_game(1, p1, p2, p1_name, p2_name)
+    my_timer.cancel()
     
         
 # If file is called from command line, run main() function

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import state
+import threading
+
 
 class Game(object):
+    timeout = False
     def __init__(self, player1=None, player2=None):
         # Creates a new state with empty board and full pool of pieces
         self._state = state.State()
@@ -36,7 +39,40 @@ class Game(object):
             # Place piece, modify state
             self._state.place_piece(row, col)
             # Print board and pieces
+
+    def timeout_occured(self):
+        self.timeout = True
+    def start_with_timer(self, timeout_time):
+        # Print initial state of board and pieces
+        GameIO.print_state(self._state)
+        while not self._game_over() and not self.timeout:
+            # Prompt player for piece
+            my_timer = threading.Timer(timeout_time, self.timeout_occured)
+            my_timer.start()
+    
+            piece = self._players[self._cp].prompt_piece(self._state)
+            my_timer.cancel()
+            
+            # Pick piece, modify state
+            self._state.pick_piece(piece)
+            # XOR to switch between players 0 and 1
+            self._cp ^= 1
+            # Prompt player for square
+            my_timer = threading.Timer(timeout_time, self.timeout_occured)
+            my_timer.start()
+
+            row, col = self._players[self._cp].prompt_square(self._state)
+            my_timer.cancel()
+
+            # Place piece, modify state
+            self._state.place_piece(row, col)
+            # Print board and pieces
             GameIO.print_state(self._state)
+            GameIO.print_state(self._state)
+        if self.timeout:
+            return "Timeout"
+        else:
+            return "Game Over"
 
     def reset(self):
         self._state = state.State()

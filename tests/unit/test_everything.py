@@ -7,6 +7,7 @@ import importlib
 
 
 class GameTestCase(unittest.TestCase):
+    
 
     def test_init_game(self):
         g = cmdgame.Game()
