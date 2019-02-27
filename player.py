@@ -96,7 +96,7 @@ class NetworkHumanPlayer(HumanPlayer):
         piece = super().prompt_piece(state)
         self._opp_sock.send("{0: <{cs}}"
                             .format(piece,
-                                    cs=self._net_chunk_size)
+                                    cs=self._net_seg_size)
                             .encode("utf-8"))
         return piece
 
@@ -104,7 +104,7 @@ class NetworkHumanPlayer(HumanPlayer):
         row, col = super().prompt_square(state)
         self._opp_sock.send("{0: <{cs}}"
                             .format(str(row) + str(col),
-                                    cs=self._net_chunk_size)
+                                    cs=self._net_seg_size)
                             .encode("utf-8"))
         return row, col
 
@@ -117,7 +117,7 @@ class NetworkAIPlayer(AIPlayer):
         piece = super().prompt_piece(state)
         self._opp_sock.send("{0: <{cs}}"
                             .format(piece,
-                                    cs=self._net_chunk_size)
+                                    cs=self._net_seg_size)
                             .encode("utf-8"))
         return piece
 
@@ -125,7 +125,7 @@ class NetworkAIPlayer(AIPlayer):
         row, col = super().prompt_square(state)
         self._opp_sock.send("{0: <{cs}}"
                             .format(str(row) + str(col),
-                                    cs=self._net_chunk_size)
+                                    cs=self._net_seg_size)
                             .encode("utf-8"))
         return row, col
 
@@ -138,7 +138,7 @@ class NetworkOpponent(AbsPlayer):
         print("Waiting for opponent {} to choose a piece..."
               .format(self._name))
         # Should receive an integer in range [0,15] as a string
-        p_str = self._sock.recv(self._net_chunk_size).decode("utf-8").strip()
+        p_str = self._sock.recv(self._net_seg_size).decode("utf-8").strip()
         piece = int(p_str)
         print("{} chose piece {}: {}"
               .format(self._name, piece+1, GameIO.figures[piece]))
@@ -148,7 +148,7 @@ class NetworkOpponent(AbsPlayer):
         print("Waiting for opponent {} to choose a square..."
               .format(self._name))
         # Should receive an integer in range [00,33] as a string
-        s_str = self._sock.recv(self._net_chunk_size).decode("utf-8").strip()
+        s_str = self._sock.recv(self._net_seg_size).decode("utf-8").strip()
         row, col = [int(x) for x in s_str]
         print("{} chose square {}{}"
               .format(self._name, row+1, GameIO.col_to_letter[col]))
