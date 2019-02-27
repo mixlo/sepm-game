@@ -4,6 +4,12 @@ from gameengine import AI
 from gameplatform import GameIO
 
 class AbsPlayer(object):
+    # The default segment size for data packages sent over sockets.
+    # Only useful for the Network* subclasses.
+    # Defines a protocol used when passing information 
+    # on game moves between computers on the network.
+    _net_seg_size = 8
+
     def __init__(self, name):
         self._name = name
 
@@ -88,12 +94,18 @@ class NetworkHumanPlayer(HumanPlayer):
 
     def prompt_piece(self, state):
         piece = super().prompt_piece(state)
-        self._opp_sock.send(str(piece).encode("utf-8"))
+        self._opp_sock.send("{0: <{cs}}"
+                            .format(piece,
+                                    cs=self._net_chunk_size)
+                            .encode("utf-8"))
         return piece
 
     def prompt_square(self, state):
         row, col = super().prompt_square(state)
-        self._opp_sock.send((str(row) + str(col)).encode("utf-8"))
+        self._opp_sock.send("{0: <{cs}}"
+                            .format(str(row) + str(col),
+                                    cs=self._net_chunk_size)
+                            .encode("utf-8"))
         return row, col
 
 class NetworkAIPlayer(AIPlayer):
@@ -103,12 +115,18 @@ class NetworkAIPlayer(AIPlayer):
 
     def prompt_piece(self, state):
         piece = super().prompt_piece(state)
-        self._opp_sock.send(str(piece).encode("utf-8"))
+        self._opp_sock.send("{0: <{cs}}"
+                            .format(piece,
+                                    cs=self._net_chunk_size)
+                            .encode("utf-8"))
         return piece
 
     def prompt_square(self, state):
         row, col = super().prompt_square(state)
-        self._opp_sock.send((str(row) + str(col)).encode("utf-8"))
+        self._opp_sock.send("{0: <{cs}}"
+                            .format(str(row) + str(col),
+                                    cs=self._net_chunk_size)
+                            .encode("utf-8"))
         return row, col
 
 class NetworkOpponent(AbsPlayer):
@@ -120,8 +138,8 @@ class NetworkOpponent(AbsPlayer):
         print("Waiting for opponent {} to choose a piece..."
               .format(self._name))
         # Should receive an integer in range [0,15] as a string
-        piece_str = self._sock.recv(1024).decode("utf-8")
-        piece = int(piece_str)
+        p_str = self._sock.recv(self._net_chunk_size).decode("utf-8").strip()
+        piece = int(p_str)
         print("{} chose piece {}: {}"
               .format(self._name, piece+1, GameIO.figures[piece]))
         return int(piece)
@@ -130,8 +148,8 @@ class NetworkOpponent(AbsPlayer):
         print("Waiting for opponent {} to choose a square..."
               .format(self._name))
         # Should receive an integer in range [00,33] as a string
-        square_str = self._sock.recv(1024).decode("utf-8")
-        row, col = [int(x) for x in square_str]
+        s_str = self._sock.recv(self._net_chunk_size).decode("utf-8").strip()
+        row, col = [int(x) for x in s_str]
         print("{} chose square {}{}"
               .format(self._name, row+1, GameIO.col_to_letter[col]))
         return row, col
