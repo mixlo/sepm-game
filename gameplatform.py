@@ -2,6 +2,13 @@
 
 from state import State
 
+class GameCmd:
+    QUIT = 'q'
+    HQUIT = 'q!'
+
+class GameStatusMsg:
+    ERROR = "ERROR"
+    
 class Game(object):
     def __init__(self, player1=None, player2=None):
         # Creates a new state with empty board and full pool of pieces
