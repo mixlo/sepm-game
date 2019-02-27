@@ -28,36 +28,39 @@ class HumanPlayer(AbsPlayer):
         super().__init__(name)
 
     def prompt_piece(self, state):
-        # Quit? Who wins then?
         # Expects an integer in range [1,16], existing in state.pieces
-        p_str = input(self._piece_msg.format(self._name)).strip()
+        p_str = input(self._piece_msg.format(self._name))
         while True:
+            p_str = p_str.strip()
             if not p_str.isdigit():
-                p_str = input("Must be an integer, try again: ").strip()
+                p_str = input("Must be an integer, try again: ")
                 continue
             piece = int(p_str) - 1
             if not 0 <= piece <= 15:
-                p_str = input("Must be in interval [1,16], try again: ").strip()
+                p_str = input("Must be in interval [1,16], try again: ")
                 continue
             if piece not in state.pieces:
-                p_str = input("Piece is already played, try again: ").strip()
+                p_str = input("Piece is already played, try again: ")
                 continue
             return piece
 
     def prompt_square(self, state):
-        # Expects an input formed as a string of two coordinates, e.g. "23"
-        sq_str = input(self._square_msg.format(self._name)).strip()
+        # Expects an input formed as a string of two coordinates, e.g. "2C"
+        sq_str = input(self._square_msg.format(self._name))
         while True:
-            if len(sq_str) != 2 or not sq_str.isdigit():
-                sq_str = input("Provide two coordinates, try again: ").strip()
+            sq_str = sq_str.strip().upper()
+            if len(sq_str) != 2:
+                sq_str = input("Provide two coordinates, try again: ")
                 continue
-            row, col = [int(x) for x in sq_str]
-            if not (1 <= row <= 4 and 1 <= col <= 4):
-                sq_str = input("Must be in interval [1,4], try again: ").strip()
+            if not sq_str[0].isdigit() or not 1 <= int(sq_str[0]) <= 4:
+                sq_str = input("Invalid row coordinate, try again: ")
                 continue
-            row, col = row-1, col-1
+            if not sq_str[1] in "ABCD":
+                sq_str = input("Invalid column coordinate, try again: ")
+                continue
+            row, col = int(sq_str[0])-1, GameIO.letter_to_col[sq_str[1]]
             if state.square(row, col) is not None:
-                sq_str = input("Square is occupied, try again: ").strip()
+                sq_str = input("Square is occupied, try again: ")
                 continue
             return row, col
 
@@ -73,10 +76,10 @@ class AIPlayer(AbsPlayer):
         return p
 
     def prompt_square(self, state):
-        s = self._ai.choose_square(state)
+        r, c = self._ai.choose_square(state)
         print("{} chose square {}{}"
-              .format(self._name, *[x+1 for x in s]))
-        return s
+              .format(self._name, r+1, GameIO.col_to_letter[c]))
+        return r, c
 
 class NetworkHumanPlayer(HumanPlayer):
     def __init__(self, name, opp_sock):
@@ -130,5 +133,5 @@ class NetworkOpponent(AbsPlayer):
         square_str = self._sock.recv(1024).decode("utf-8")
         row, col = [int(x) for x in square_str]
         print("{} chose square {}{}"
-              .format(self._name, row+1, col+1))
+              .format(self._name, row+1, GameIO.col_to_letter[col]))
         return row, col

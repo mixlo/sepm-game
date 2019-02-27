@@ -64,60 +64,61 @@ class Game(object):
 
 class GameIO(object):
     figures = {
-         0: "<+X >",
+         0: "<+X#>",
          1: "<+X*>",
-         2: "<+O >",
+         2: "<+O#>",
          3: "<+O*>",
-         4: "<-X >",
+         4: "<-X#>",
          5: "<-X*>",
-         6: "<-O >",
+         6: "<-O#>",
          7: "<-O*>",
-         8: "(+X )",
+         8: "(+X#)",
          9: "(+X*)",
-        10: "(+O )",
+        10: "(+O#)",
         11: "(+O*)",
-        12: "(-X )",
+        12: "(-X#)",
         13: "(-X*)",
-        14: "(-O )",
+        14: "(-O#)",
         15: "(-O*)",
         None: "     "
     }
 
+    letter_to_col = dict(zip("ABCD", range(4)))
+    col_to_letter = dict(zip(range(4), "ABCD"))
+
     _game_view_str = """
-+-------+-------+-------+-------+   PIECES LEFT:
-|       |       |       |       |    1. {016}
-| {000} | {001} | {002} | {003} |    2. {017}
-|       |       |       |       |    3. {018}
-+-------+-------+-------+-------+    4. {019}
-|       |       |       |       |    5. {020}
-| {004} | {005} | {006} | {007} |    6. {021}
-|       |       |       |       |    7. {022}
-+-------+-------+-------+-------+    8. {023}
-|       |       |       |       |    9. {024}
-| {008} | {009} | {010} | {011} |   10. {025}
-|       |       |       |       |   11. {026}
-+-------+-------+-------+-------+   12. {027}
-|       |       |       |       |   13. {028}
-| {012} | {013} | {014} | {015} |   14. {029}
-|       |       |       |       |   15. {030}
-+-------+-------+-------+-------+   16. {031}
+       A       B       C       D
+   +-------+-------+-------+-------+   PIECES LEFT:
+   |       |       |       |       |    1. {016}
+ 1 | {000} | {001} | {002} | {003} |    2. {017}
+   |       |       |       |       |    3. {018}
+   +-------+-------+-------+-------+    4. {019}
+   |       |       |       |       |    5. {020}
+ 2 | {004} | {005} | {006} | {007} |    6. {021}
+   |       |       |       |       |    7. {022}
+   +-------+-------+-------+-------+    8. {023}
+   |       |       |       |       |    9. {024}
+ 3 | {008} | {009} | {010} | {011} |   10. {025}
+   |       |       |       |       |   11. {026}
+   +-------+-------+-------+-------+   12. {027}
+   |       |       |       |       |   13. {028}
+ 4 | {012} | {013} | {014} | {015} |   14. {029}
+   |       |       |       |       |   15. {030}
+   +-------+-------+-------+-------+   16. {031}
 """
 
-    _piece_rule_message = """
-To choose a piece, enter a number between 1 and 16 corresponding to one of the 
-available pieces in the list 'PIECES LEFT'. For example, entering number 10 
-would select the piece {}."""
-
-    _square_rule_message = """
-To choose a square, enter the square's row (from the top) and column (from the 
-left) coordinates on the board as a single number. For example, entering number 
-23 would select the square located at the second row and the third column."""
+    _instructions = """
+ - Enter number between 1-16 to choose piece from 'PIECES LEFT': '10' = {}.
+ - Enter row and column to choose square: '2C'/'2c' = second row, third column.
+ - Enter 'q' to forfeit the game and quit to the main menu.
+ - Enter 'q!' to forfeit the game and close the application."""
 
     @classmethod
     def print_welcome(cls, p1_name, p2_name):
         print("Welcome to the game between {} and {}!".format(p1_name, p2_name))
-        print(cls._piece_rule_message.format(GameIO.figures[9]))
-        print(cls._square_rule_message)
+        print()
+        print("Instructions:")
+        print(cls._instructions.format(GameIO.figures[9]))
         print()
         print("On your marks, get set, go!")
 

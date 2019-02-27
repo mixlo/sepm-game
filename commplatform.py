@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-import socket, random, re
-from math import ceil, log
+import socket, random, re, time
 from datetime import datetime
 from gameplatform import Game
 from player import (
@@ -29,14 +28,15 @@ class AbsMenu(object):
     
     def _prompt_option(self):
         # Expects an integer in range [1,num_options]
-        option_str = input("Please choose an option: ").strip()
+        option_str = input("Please choose an option: ")
         while True:
+            option_str = option_str.strip()
             if not option_str.isdigit():
-                option_str = input("Must be an integer, try again: ").strip()
+                option_str = input("Must be an integer, try again: ")
                 continue
             option = int(option_str)
             if not 1 <= option <= self._num_options:
-                option_str = input("Invalid option, try again: ").strip()
+                option_str = input("Invalid option, try again: ")
                 continue
             print()
             return option
@@ -75,19 +75,19 @@ class StartMenu(AbsMenu):
         LocalMenu().show()
 
     def _play_hosted_game(self):
-        game, server_sock, opp_sock = GameFactory.create_hosted_game()
+        game, csock = GameFactory.create_hosted_game()
         if game is None:
             return
         game.start()
-        server_sock.close()
-        opp_sock.close()
+        csock.close()
 
     def _play_joined_game(self):
-        game, opp_sock = GameFactory.create_joined_game()
+        game, lsock, hsock = GameFactory.create_joined_game()
         if game is None:
             return
         game.start()
-        opp_sock.close()
+        lsock.close()
+        hsock.close()
 
     def _play_tournament(self):
         TournamentMenu().show()
@@ -141,32 +141,35 @@ class TournamentMenu(AbsMenu):
         GameFactory.create_local_tournament().play()
 
     def _play_hosted_tournament(self):
-        t, server_sock, opp_sock = GameFactory.create_hosted_tournament()
+        t, csock = GameFactory.create_hosted_tournament()
         if t is None:
             return
         t.play()
-        server_sock.close()
-        opp_sock.close()
+        csock.close()
 
     def _play_joined_tournament(self):
-        t, opp_sock = GameFactory.create_joined_tournament()
+        t, lsock, hsock = GameFactory.create_joined_tournament()
         if t is None:
             return
         t.play()
-        opp_sock.close()
+        lsock.close()
+        hsock.close()
 
 class GameFactory(object):
     _default_port = 1337
     _tournament_port = 1338
-    _conn_timeout = 60
-
+    _bc_ip = "255.255.255.255"
+    _wait_client_timeout = 60
+    _wait_host_timeout = 5
+    _connect_client_timeout = 5
+    
     _host_tournament_msg = """
-You are the host of a {}-player tournament. Please provide your {} players and 
-wait for the connected client to provide the remaining {} participants.
+You are the host of a {}-player tournament. Please provide your {} player(s) 
+and wait for the connected client to provide the remaining {} participant(s).
 """
     _join_tournament_msg = """
-You have joined a {}-player tournament. The host is entering {} players, 
-please provide the remaining {} participants.
+You have joined a {}-player tournament. The host is entering {} player(s), 
+please provide the remaining {} participant(s).
 """
     
     @classmethod
@@ -181,77 +184,82 @@ please provide the remaining {} participants.
     @classmethod
     def create_p_vs_ai_game(cls):
         p_name = cls._prompt_name("Player", [])
-        ai_name = cls._prompt_name("AI", [p_name])
+        #ai_name = cls._prompt_name("AI", [p_name])
         ai_diff = cls._prompt_difficulty("AI")
         print()
         p = HumanPlayer(p_name)
-        ai = AIPlayer(ai_name, ai_diff)
+        ai = AIPlayer("Bot", ai_diff)
         return Game(p, ai)
 
     @classmethod
     def create_ai_vs_ai_game(cls):
-        ai1_name = cls._prompt_name("AI 1", [])
+        #ai1_name = cls._prompt_name("AI 1", [])
         ai1_diff = cls._prompt_difficulty("AI 1")
-        ai2_name = cls._prompt_name("AI 2", [ai1_name])
+        #ai2_name = cls._prompt_name("AI 2", [ai1_name])
         ai2_diff = cls._prompt_difficulty("AI 2")
         print()
-        ai1 = AIPlayer(ai1_name, ai1_diff)
-        ai2 = AIPlayer(ai2_name, ai2_diff)
+        ai1 = AIPlayer("Bot 1", ai1_diff)
+        ai2 = AIPlayer("Bot 2", ai2_diff)
         return Game(ai1, ai2)
 
     @classmethod
     def create_hosted_game(cls):
-        p_name = cls._prompt_name("host player", [])
-        ai_diff = None
+        #p_name = cls._prompt_name("host player", [])
+        p_name, ai_diff = None, None
         if input("Host as AI? (y/n): ").strip().lower() == "y":
+            p_name = "Host"
             ai_diff = cls._prompt_difficulty("AI")
+        else:
+            p_name = cls._prompt_name("host player", [])
         print("Waiting for opponent...")
-        server_sock, opp_sock = cls._establish_client_conn(cls._default_port)
-        if opp_sock is None:
+        csock = cls._establish_client_conn(cls._default_port)
+        if csock is None:
             print("No opponent connected within {} seconds."
-                  .format(cls._conn_timeout))
+                  .format(cls._wait_client_timeout))
             print()
-            return None, None, None
+            return None, None
         p = None
         if ai_diff is None:
-            p = NetworkHumanPlayer(p_name, opp_sock)
+            p = NetworkHumanPlayer(p_name, csock)
         else:
-            p = NetworkAIPlayer(p_name, ai_diff, opp_sock)
-        opp_sock.send(p.name.encode("utf-8"))
-        opp_name = opp_sock.recv(1024).decode("utf-8")
+            p = NetworkAIPlayer(p_name, ai_diff, csock)
+        csock.send(p.name.encode("utf-8"))
+        opp_name = csock.recv(1024).decode("utf-8")
         print("Established connection with opponent {}.".format(opp_name))
-        o = NetworkOpponent(opp_name, opp_sock)
+        o = NetworkOpponent(opp_name, csock)
         print()
-        return Game(p, o), server_sock, opp_sock
+        return Game(p, o), csock
 
     @classmethod
     def create_joined_game(cls):
-        opp_addr = cls._prompt_ip("host")
         print("Connecting to host...")
-        opp_sock = cls._establish_host_conn(opp_addr, cls._default_port)
-        if opp_sock is None:
+        lsock, hsock = cls._establish_host_conn(cls._default_port)
+        if hsock is None:
             print("Couldn't connect to host.")
             print()
-            return None, None
-        opp_name = opp_sock.recv(1024).decode("utf-8")
+            return None, None, None
+        opp_name = hsock.recv(1024).decode("utf-8")
         print("Established connection with opponent {}.".format(opp_name))
-        p_name = cls._prompt_name("joining player",
-                                  [opp_name.split("AI ").pop()])
         p = None
         if input("Join as AI? (y/n): ").strip().lower() == "y":
+            p_name = "Client"
             ai_diff = cls._prompt_difficulty("AI")
-            p = NetworkAIPlayer(p_name, ai_diff, opp_sock)
+            p = NetworkAIPlayer(p_name, ai_diff, hsock)
         else:
-            p = NetworkHumanPlayer(p_name, opp_sock)
-        opp_sock.send(p.name.encode("utf-8"))
-        o = NetworkOpponent(opp_name, opp_sock)
+            p_name = cls._prompt_name("joining player",
+                                      [opp_name.split("AI ").pop()])
+            p = NetworkHumanPlayer(p_name, hsock)
+        hsock.send(p.name.encode("utf-8"))
+        o = NetworkOpponent(opp_name, hsock)
         print()
-        return Game(o, p), opp_sock
+        return Game(o, p), lsock, hsock
 
     @classmethod
     def create_local_tournament(cls):
         p_count = cls._prompt_participants_count()
-        participants = cls._prompt_participants(p_count)
+        h_count = cls._prompt_human_participants_count(p_count)
+        participants = cls._get_random_ai_players(p_count - h_count)
+        participants += cls._prompt_humans(h_count)
         random.shuffle(participants)
         return Tournament(participants)
 
@@ -260,102 +268,144 @@ please provide the remaining {} participants.
         p_count = cls._prompt_participants_count()
         p_count_local = cls._prompt_host_participants_count(p_count)
         print("Waiting for client computer to connect...")
-        server_sock, opp_sock = cls._establish_client_conn(cls._tournament_port)
-        if opp_sock is None:
+        csock = cls._establish_client_conn(cls._tournament_port)
+        if csock is None:
             print("No one connected within {} seconds."
-                  .format(cls._conn_timeout))
+                  .format(cls._wait_client_timeout))
             print()
-            return None, None, None
-        opp_sock.send("{},{}".format(p_count, p_count_local).encode("utf-8"))
+            return None, None
+        csock.send("{},{}".format(p_count, p_count_local).encode("utf-8"))
         print("Established connection with client computer.")
         print(cls._host_tournament_msg
               .format(p_count, p_count_local, p_count - p_count_local))
         participants = cls._prompt_network_participants(p_count_local,
-                                                        opp_sock,
+                                                        csock,
                                                         [])
-        opp_sock.send(",".join([p.name for p in participants]).encode("utf-8"))
-        print("Waiting for client's players...")
+        csock.send(",".join([p.name for p in participants]).encode("utf-8"))
+        print("Waiting for client's player(s)...")
         print()
-        opp_p_names = opp_sock.recv(1024).decode("utf-8").split(",")
+        opp_p_names = csock.recv(1024).decode("utf-8").split(",")
         participants = (participants +
-                        [NetworkOpponent(n, opp_sock) for n in opp_p_names])
+                        [NetworkOpponent(n, csock) for n in opp_p_names])
         seed = datetime.now().timestamp()
-        opp_sock.send(str(seed).encode("utf-8"))
+        csock.send(str(seed).encode("utf-8"))
         random.seed(seed)
         random.shuffle(participants)
-        return Tournament(participants), server_sock, opp_sock
+        return Tournament(participants), csock
 
     @classmethod
     def create_joined_tournament(cls):
-        opp_addr = cls._prompt_ip("host")
         print("Connecting to host...")
-        opp_sock = cls._establish_host_conn(opp_addr, cls._tournament_port)
-        if opp_sock is None:
+        lsock, hsock = cls._establish_host_conn(cls._tournament_port)
+        if hsock is None:
             print("Couldn't connect to host.")
             print()
-            return None, None
-        counts = opp_sock.recv(1024).decode("utf-8")
+            return None, None, None
+        counts = hsock.recv(1024).decode("utf-8")
         p_count, p_count_host = [int(c) for c in counts.split(",")]
         p_count_local = p_count - p_count_host
         print("Established connection with tournament host.")
         print(cls._join_tournament_msg
               .format(p_count, p_count_host, p_count_local))
-        print("Waiting for host's players...")
+        print("Waiting for host's player(s)...")
         print()
-        opp_p_names = opp_sock.recv(1024).decode("utf-8").split(",")
+        opp_p_names = hsock.recv(1024).decode("utf-8").split(",")
         taken_names = [n.split("AI ").pop() for n in opp_p_names]
         participants = cls._prompt_network_participants(p_count_local,
-                                                        opp_sock,
+                                                        hsock,
                                                         taken_names)
-        opp_sock.send(",".join([p.name for p in participants]).encode("utf-8"))
-        participants = ([NetworkOpponent(n, opp_sock) for n in opp_p_names] +
+        hsock.send(",".join([p.name for p in participants]).encode("utf-8"))
+        participants = ([NetworkOpponent(n, hsock) for n in opp_p_names] +
                         participants)
-        seed = float(opp_sock.recv(1024).decode("utf-8"))
+        seed = float(hsock.recv(1024).decode("utf-8"))
         random.seed(seed)
         random.shuffle(participants)
-        return Tournament(participants, False), opp_sock
+        return Tournament(participants, False), lsock, hsock
 
     @classmethod
-    def _establish_host_conn(cls, host_ip, port):
-        host_sock = socket.socket()
-        try:
-            host_sock.connect((host_ip, port))
-            return host_sock
-        except socket.error:
-            host_sock.close()
-            return None
+    def _establish_host_conn(cls, port):
+        cls._broadcast_ip(port)
+        lsock, hsock = cls._wait_for_host(port)
+        return lsock, hsock
 
     @classmethod
     def _establish_client_conn(cls, port):
-        server_sock = socket.socket()
-        server_sock.bind(('', port))
-        server_sock.listen(1)
-        server_sock.settimeout(cls._conn_timeout)
-        try:
-            client_sock, _ = server_sock.accept()
-            return server_sock, client_sock
-        except socket.error:
-            server_sock.close()
-            return None, None
+        csock = None
+        client_ip = cls._get_client_ip(port)
+        if client_ip is not None:
+            csock = cls._connect_to_client(client_ip, port)
+        return csock
 
+    @classmethod
+    def _broadcast_ip(cls, port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        s.sendto("UUGAME".encode("utf-8"), (cls._bc_ip, port))
+        s.close()
+
+    @classmethod
+    def _wait_for_host(cls, port):
+        lsock = socket.socket()
+        lsock.bind(("", port))
+        lsock.listen(1)
+        lsock.settimeout(cls._wait_host_timeout)
+        try:
+            hsock, _ = lsock.accept()
+            return lsock, hsock
+        except:
+            lsock.close()
+            return None, None
+        
+    @classmethod
+    def _get_client_ip(cls, port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.bind(("", port))
+        s.settimeout(cls._wait_client_timeout)
+        ip = None
+        try:
+            _, (ip, _) = s.recvfrom(1024)
+        finally:
+            s.close()
+            return ip
+
+    @classmethod
+    def _connect_to_client(cls, client_ip, port):
+        # Have to use time.sleep(), csock.settimeout()
+        # doesn't seem to work as expected
+        for _ in range(cls._connect_client_timeout):
+            csock = socket.socket()
+            try:
+                csock.connect((client_ip, port))
+                return csock
+            except:
+                csock.close()
+            time.sleep(1)
+        return None
+
+    @classmethod
+    def _get_random_ai_players(cls, num):
+        return [AIPlayer("Bot " + str(i+1), random.randint(1, 3))
+                for i in range(num)]
+        
     @classmethod
     def _prompt_name(cls, title, taken):
         name_fmt = re.compile("^(?!AI )[A-Z0-9]+(?:[ -][A-Z0-9]+)*$",
                               re.IGNORECASE)
         # Expects a non-empty string
-        name = input("Enter the name of {}: ".format(title)).strip()
+        name = input("Enter the name of {}: ".format(title))
         while True:
+            name = name.strip()
             if len(name) == 0:
-                name = input("Name can't be empty, try again: ").strip()
+                name = input("Name can't be empty, try again: ")
                 continue
             if len(name) > 15:
-                name = input("Use at most 15 characters, try again: ").strip()
+                name = input("Use at most 15 characters, try again: ")
                 continue
             if name_fmt.match(name) is None:
-                name = input("Invalid name, try again: ").strip()
+                name = input("Invalid name, try again: ")
                 continue
             if name in taken:
-                name = input("Name is taken, try again: ").strip()
+                name = input("Name is taken, try again: ")
                 continue
             return name
 
@@ -363,41 +413,43 @@ please provide the remaining {} participants.
     def _prompt_difficulty(cls, title):
         # Expects an integer in range [1,3]
         diff_str = input("Enter {} difficulty (LOW=1, MEDIUM=2, HIGH=3): "
-                         .format(title)).strip()
+                         .format(title))
         while True:
+            diff_str = diff_str.strip()
             if not diff_str.isdigit():
-                diff_str = input("Invalid difficulty, try again: ").strip()
+                diff_str = input("Invalid difficulty, try again: ")
                 continue
             diff = int(diff_str)
             if not 1 <= diff <= 3:
-                diff_str = input("Invalid difficulty, try again: ").strip()
+                diff_str = input("Invalid difficulty, try again: ")
                 continue
             return diff
 
     @classmethod
-    def _prompt_ip(cls, title):
-        # Expects an IPv4 address (X.X.X.X)
-        ip = input("Enter IPv4 address of {}: ".format(title)).strip()
+    def _prompt_num(cls, msg, start, end):
+        # Expects an integer in range [start,end]
+        num_str = input(msg)
         while True:
-            try:
-                socket.inet_pton(socket.AF_INET, ip)
-                return ip
-            except socket.error:
-                ip = input("Invalid IPv4 address, try again: ").strip()
+            num_str = num_str.strip()
+            if not num_str.isdigit():
+                num_str = input("Invalid number, try again: ")
+                continue
+            num = int(num_str)
+            if not start <= num <= end:
+                num_str = input("Number must be between {}-{}, try again: "
+                                .format(start, end))
+                continue
+            return num
 
     @classmethod
-    def _prompt_participants(cls, p_count):
-        participants, taken_names = [], []
+    def _prompt_humans(cls, p_count):
+        humans, taken_names = [], []
         for i in range(p_count):
             p_name = cls._prompt_name("Player " + str(i+1), taken_names)
             taken_names.append(p_name)
-            if input("Should player be an AI? (y/n): ").strip().lower() == "y":
-                ai_diff = cls._prompt_difficulty("AI")
-                participants.append(AIPlayer(p_name, ai_diff))
-            else:
-                participants.append(HumanPlayer(p_name))
+            humans.append(HumanPlayer(p_name))
         print()
-        return participants
+        return humans
 
     @classmethod
     def _prompt_network_participants(cls, p_count, opp_sock, taken):
@@ -416,34 +468,28 @@ please provide the remaining {} participants.
     @classmethod
     def _prompt_participants_count(cls):
         # Expects an integer in range [3,8]
-        return cls._prompt_num_in_range("Enter number of participants: ", 3, 8)
+        return cls._prompt_num("Enter number of participants: ", 3, 8)
+
+    @classmethod
+    def _prompt_human_participants_count(cls, p_count):
+        return cls._prompt_num("Enter number of human participants: ",
+                               0, p_count)
 
     @classmethod
     def _prompt_host_participants_count(cls, p_count):
         # Expects an integer in range [3,8]
-        return cls._prompt_num_in_range("Enter number of participants from " +
-                                        "this computer: ", 1, p_count)
-
-    @classmethod
-    def _prompt_num_in_range(cls, msg, start, end):
-        # Expects an integer in range [start,end]
-        num_str = input(msg).strip()
-        while True:
-            if not num_str.isdigit():
-                num_str = input("Invalid number, try again: ").strip()
-                continue
-            num = int(num_str)
-            if not start <= num <= end:
-                num_str = input("Number must be between {}-{}, try again: "
-                                .format(start, end)).strip()
-                continue
-            return num
+        return cls._prompt_num("Enter number of participants from " +
+                               "this computer: ", 1, p_count)
 
 class Tournament(object):
+    _byes_msg = """
+Since this is a single elimination tournament and there are {} participants, 
+{} player(s) have been given a bye."""
+    
     def __init__(self, participants, is_hosting=True):
         self._participants = participants[:]
-        self._placings = []
         self._is_hosting = is_hosting
+        self._bp = BracketPrinter(participants)
 
     def play(self):
         print("Welcome to the tournament!")
@@ -451,27 +497,30 @@ class Tournament(object):
         print()
         for p in self._participants:
             print(" -", p.name)
+        byes = self._calc_byes(len(self._participants))
+        if byes != 0:
+            print(self._byes_msg.format(len(self._participants), byes))
+        print()
+        print("Draws are not allowed.")
+        print("Games will be played and replayed until a winner is declared.")
         print()
         print("Let's begin!")
         print()
-        self._play_tournament(self._participants)
-        print("Final scoreboard!")
-        for i, p in enumerate(self._placings):
-            print("{}. {}".format(i+1, p.name))
+        self._bp.print_bracket()
+        winner = self._play_tournament(self._participants)
+        print("{} wins the entire tournament!".format(winner.name))
         print()
 
     def _play_tournament(self, players):
         if len(players) == 1:
-            self._placings.insert(0, players[0])
-        if len(players) >= 2:
-            winners, losers = self._play_brackets(players)
-            self._play_tournament(losers)
-            self._play_tournament(winners)
+            return players[0]
+        winners = self._play_brackets(players)
+        return self._play_tournament(winners)
     
     def _play_brackets(self, players):
-        games, winners, losers = [], [], []
+        games, winners = [], []
         # Byes will only occur first time
-        byes = pow(2, ceil(log(len(players), 2))) - len(players)
+        byes = self._calc_byes(len(players))
         if byes != 0:
             winners = players[-byes:]
             players = players[:-byes]
@@ -489,5 +538,54 @@ class Tournament(object):
                 g.reset()
                 g.start()
             winners.append(g.winner)
-            losers.append(g.loser)
-        return winners, losers
+            self._bp.increment(g.winner)
+            self._bp.print_bracket()
+        return winners
+
+    def _calc_byes(self, num_players):
+        return (1 << (num_players - 1).bit_length()) - num_players
+
+class BracketPrinter(object):
+    _line_len = 20
+    
+    def __init__(self, players):
+        self._positions = [p.name for p in players]
+        num_players = len(players)
+        self._brkt_str = self._make_bracket_str(num_players)
+        self._fillers = "?" * (2 * num_players - 1)
+
+    def increment(self, player):
+        self._positions.append(player.name)
+
+    def print_bracket(self):
+        print("Bracket status:")
+        print()
+        print(self._brkt_str.format(*self._positions, *self._fillers))
+        print()
+
+    def _make_bracket_str(self, num_players):
+        nlvls = (num_players-1).bit_length() + 1
+        nbyes = pow(2, nlvls-1) - num_players
+        level_strs = self._make_brkt_lvl_strs(nlvls, byes=nbyes)
+        return "\n".join(list(map("".join, zip(*level_strs))))
+
+    def _make_brkt_lvl_strs(self, nlvls, lvl=1, counter=0, byes=0):
+        if lvl > nlvls:
+            return [[""] * (pow(2, nlvls) - 1)]
+        padding = pow(2, lvl-1) - 1
+        lines, switch = [], 0
+        for i in range(padding):
+            lines.append(" " * (self._line_len+1))
+        for i in range(pow(2, lvl+1) * byes):
+            lines.append(" " * (self._line_len+1))
+        for i in range(pow(2, lvl+1) * byes, pow(2, nlvls) - padding * 2 - 1):
+            if i % pow(2, lvl) == 0:
+                lines.append("{{{0}:-<{1}}}+".format(counter, self._line_len))
+                switch ^= 1
+                counter += 1
+            else:
+                if switch: lines.append(" " * self._line_len + "|")
+                else:      lines.append(" " * (self._line_len+1))
+        for i in range(padding):
+            lines.append(" " * (self._line_len+1))
+        return [lines] + self._make_brkt_lvl_strs(nlvls, lvl+1, counter, 0)
