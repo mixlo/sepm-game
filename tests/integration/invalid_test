@@ -1,0 +1,1 @@
+python3 advanced_robot_wars invalid.py < test_invalid_input.txt
