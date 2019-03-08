@@ -6,6 +6,8 @@ import cmdgame
 import importlib
 import player
 import gameengine
+import gameplatform
+
 
 class GameTestCase(unittest.TestCase):
     def setUp(self):
@@ -19,7 +21,7 @@ class GameTestCase(unittest.TestCase):
         p1 = player.AIPlayer(p1_name, gameengine.Difficulty.LOW)
         p2 = player.AIPlayer(p2_name, gameengine.Difficulty.LOW)
         for i in range(self.rounds):
-            g = cmdgame.Game(p1, p2)
+            g = gameplatform.Game(p1, p2)
             self.assertEqual("Game Over", g.start_with_timer(10))
         
     def test_medium_bot_time(self):
@@ -30,7 +32,7 @@ class GameTestCase(unittest.TestCase):
         p1 = player.AIPlayer(p1_name, gameengine.Difficulty.MEDIUM)
         p2 = player.AIPlayer(p2_name, gameengine.Difficulty.MEDIUM)
         for i in range(self.rounds):
-            g = cmdgame.Game(p1, p2)
+            g = gameplatform.Game(p1, p2)
             self.assertEqual("Game Over", g.start_with_timer(10))
         
     def test_hard_bot_time(self):
@@ -41,7 +43,7 @@ class GameTestCase(unittest.TestCase):
         p1 = player.AIPlayer(p1_name, gameengine.Difficulty.HIGH)
         p2 = player.AIPlayer(p2_name, gameengine.Difficulty.HIGH)
         for i in range(self.rounds):
-            g = cmdgame.Game(p1, p2)
+            g = gameplatform.Game(p1, p2)
             self.assertEqual("Game Over", g.start_with_timer(10))
         
 

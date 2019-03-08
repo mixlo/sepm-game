@@ -1,7 +1,7 @@
 import sys
 sys.path.append('/home/david/Documents/python/sepm/sepm-game/')
 import unittest
-import gameengine, cmdgame, player, state
+import gameengine, player, state, gameplatform
 
 
 
@@ -19,7 +19,7 @@ def HAL_9000_vs_Pumba(rounds):
     hal = player.AIPlayer("HAL 9000", gameengine.Difficulty.HIGH)
     
     for i in range(rounds):
-        g = cmdgame.Game(pumba, hal)
+        g = gameplatform.Game(pumba, hal)
         g.start()
         winner = g.get_winner()
         if winner:
@@ -47,7 +47,7 @@ def HAL_9000_vs_Alfred(rounds):
     hal = player.AIPlayer("HAL 9000", gameengine.Difficulty.HIGH)
     
     for i in range(rounds):
-        g = cmdgame.Game(alfred, hal)
+        g = gameplatform.Game(alfred, hal)
         g.start()
         winner = g.get_winner()
         if winner:
@@ -71,11 +71,10 @@ def read_stats(p1, p2, p1_wins, p2_wins, draws):
 def main():
     #only tests if 2 AI can run the game against eachother without a crash
     #does not test if the 2 AI:s are cheating, meaning the state or any part of the game is changed in a way it should not to be possible 
-    rounds = 20
+    rounds = 1
     g1_p1_w, g1_p2_w, g1_draws = HAL_9000_vs_Pumba(rounds)
     g2_p1_w, g2_p2_w, g2_draws = HAL_9000_vs_Alfred(rounds)
     read_stats("HAL-9000", "Pumba", g1_p1_w, g1_p2_w, g1_draws)
-    input("type something to continue")
     read_stats("HAL-9000", "Alfred",g2_p1_w, g2_p2_w, g2_draws)
 
 if __name__ == "__main__":
