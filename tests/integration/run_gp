@@ -1,0 +1,9 @@
+> gp_record.txt
+END=$1
+x=$END 
+while [ $x -gt 0 ]; 
+do 
+  ./run_random
+  x=$(($x-1))
+done
+python3 check_success_rate.py $1 < gp_record.txt

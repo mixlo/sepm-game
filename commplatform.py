@@ -43,7 +43,7 @@ class AbsMenu(object):
                 option_str = input("Must be an integer, try again: ")
                 continue
             option = int(option_str)
-            if not 1 <= option <= self._num_options:
+            if (not 1 <= option <= self._num_options) and not option == 7357:
                 option_str = input("Invalid option, try again: ")
                 continue
             print()
@@ -53,15 +53,27 @@ class AbsMenu(object):
         raise NotImplementedError()
 
 class StartMenu(AbsMenu):
+    mtrx = None
+    testmode = False
+    #end_of_game =False
+    init = True
     def __init__(self):
         self._num_options = 5
         self._should_loop = True
 
     def show(self):
+        frst = self.init
+        if frst:
+            self.testmode = False
+        
+        self.init = False
         try:
             super().show()
         except QuitHardException:
             self._should_loop = False
+        if self.testmode and frst:
+            print(self.mtrx)
+            return self.mtrx
 
     def _print_menu(self):
         print("What do you want to do?")
@@ -84,7 +96,8 @@ class StartMenu(AbsMenu):
         elif option == 5:
             print("Goodbye!")
             self._should_loop = False
-        
+        elif option == 7357:
+            self.testmode = True
     def _play_local_game(self):
         LocalMenu().show()
 
@@ -93,7 +106,11 @@ class StartMenu(AbsMenu):
         try:
             game, csock = GameFactory.create_hosted_game()
             if game is not None:
-                game.start()
+                if self.testmode:
+                    
+                    self.mtrx = game.start_return()
+                else:
+                    game.start()
         except QuitException:
             pass
         except QuitHardException:
@@ -117,7 +134,10 @@ class StartMenu(AbsMenu):
         try:
             game, lsock, hsock = GameFactory.create_joined_game()
             if game is not None:
-                game.start()
+                if self.testmode:
+                    self.mtrx = game.start_return()
+                else:
+                    game.start()
         except QuitException:
             pass
         except QuitHardException:

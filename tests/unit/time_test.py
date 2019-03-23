@@ -10,6 +10,7 @@ import gameplatform
 
 
 class GameTestCase(unittest.TestCase):
+
     def setUp(self):
         self.rounds = 1
 
@@ -47,5 +48,8 @@ class GameTestCase(unittest.TestCase):
             self.assertEqual("Game Over", g.start_with_timer(10))
         
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
+#    if len(sys.argv) == 2 and str.isdigit(sys.argv[1]):
+#        r = int(sys.argv[1])
+    
     unittest.main() 

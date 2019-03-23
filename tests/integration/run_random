@@ -1,0 +1,1 @@
+./generate_random && ./test_random_matrix 

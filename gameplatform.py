@@ -29,7 +29,26 @@ class Game(object):
     @property
     def loser(self):
         return self._loser
-
+    def start_return(self):
+        # Print initial state of board and pieces
+        GameIO.print_welcome(self._players[0].name, self._players[1].name)
+        GameIO.print_state(self._state)
+        while not self._board_full():
+            # Prompt player for piece
+            piece = self._players[self._cp].prompt_piece(self._state)
+            # Pick piece, modify state
+            self._state.pick_piece(piece)
+            # XOR to switch between players 0 and 1
+            self._cp ^= 1
+            # Prompt player for square
+            row, col = self._players[self._cp].prompt_square(self._state)
+            # Place piece, modify state
+            self._state.place_piece(row, col)
+            # Print board and pieces
+            GameIO.print_state(self._state)
+        print()
+        return self._state._board
+        
     def start(self):
         # Print initial state of board and pieces
         GameIO.print_welcome(self._players[0].name, self._players[1].name)
@@ -93,7 +112,9 @@ class Game(object):
         if not self._state.is_draw():
             return self._winner.name
         return False
-    
+    def _board_full(self):
+        return (not self._state._pieces and
+                self._state._held_piece is None)
     def _game_over(self):
         if self._state.has_winner():
             self._winner = self._players[self._cp]

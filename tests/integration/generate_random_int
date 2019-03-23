@@ -1,0 +1,1 @@
+python3 generate_int.py > int_client.txt && cat int_client.txt > int_host.txt && sed -i.old '3s;^;3\nn\nMartha\n;' int_client.txt && sed -i.old '3s;^;2\nn\nAlfred\n;' int_host.txt && echo '5' >> int_host.txt && echo '5' >> int_client.txt
