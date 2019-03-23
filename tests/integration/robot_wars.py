@@ -1,12 +1,7 @@
 import sys
-sys.path.append('/home/david/Documents/python/sepm/sepm-game/')
+sys.path.append('../../')
 import unittest
 import gameengine, player, state, gameplatform
-
-
-
-
-
 def HAL_9000_vs_Pumba(rounds):
     draw_counter = 0
     pumba_win_count = 0

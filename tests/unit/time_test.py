@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/david/Documents/python/sepm/sepm-game/')
+sys.path.append('../../')
 import state
 import unittest
 import cmdgame
