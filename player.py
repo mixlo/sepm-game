@@ -27,7 +27,7 @@ class AbsPlayer(object):
     
     # Prompts the player for the coordinates of a square in which to place the
     # currently held piece. Returns two integers in range 0-3.
-    def prompt_move(self, state):  raise NotImplementedError()
+    def prompt_square(self, state):  raise NotImplementedError()
 
 class HumanPlayer(AbsPlayer):
     _piece_msg = "{}, choose a piece for the opponent to place: "
