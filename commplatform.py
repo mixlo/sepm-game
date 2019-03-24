@@ -573,10 +573,14 @@ please provide the remaining {} participant(s).
                 continue
             diff = int(diff_str)
             if 3 < diff:
-                diff_str = input("In order not to create skynet we capped the difficulty at 3, try again: ").strip()
+                diff_str = input("In order not to create skynet, the " +
+                                 "difficulty is capped at 3, " +
+                                 "try again: ").strip()
                 continue
             if 1 > diff:
-                diff_str = input("Chosing difficultys lower than 1 will cause the ai to self destruct, try again: ").strip()
+                diff_str = input("Choosing difficulties lower than 1 will " +
+                                 "cause the AI to self-destruct, " +
+                                 "try again: ").strip()
                 continue
             return diff
 
